@@ -7,7 +7,7 @@ def raw(month_start=1, month_end=12):
 
     # `month_end+1` because the loop stops 1 before end
     for month in range(month_start, month_end+1):
-        path = f"../../data/nyc_taxi_2024-{month:02d}.csv"
+        path = f"../../data/nyc_taxi_2024_{month:02d}.csv"
         tmp = pd.read_csv(
             path, 
             parse_dates = ["tpep_pickup_datetime", "tpep_dropoff_datetime"],
