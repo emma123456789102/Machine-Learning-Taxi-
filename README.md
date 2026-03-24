@@ -3,9 +3,9 @@
 Machine Learning for Data Analysis (ID5059) project using NYC taxi trip data.
 
 ## Team
-- Emma Davidson
-- Kimon Vostanis
-- Lucy Grunnell
+- 2500334488
+- 240027360
+- 220001379
 - Bhaskar Haldar
 
 ## Project aim
