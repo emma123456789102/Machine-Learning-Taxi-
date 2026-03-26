@@ -1,1 +1,2 @@
-data/*.csv
+data/nyc_taxi_*.csv
+data/processed/
