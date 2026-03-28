@@ -1,5 +1,7 @@
 import pandas as pd
 
+##############################################################################
+#
 # Return only one month from `data/` dircectory.
 #
 # <https://studres.cs.st-andrews.ac.uk/ID5059/Coursework/P2/data/>
@@ -53,8 +55,9 @@ def raw(month_start=1, month_end=2):
 #
 # 4. typecast all `object` types -> `category` (expect `store_and_fwd_flag`, which
 #    is a boolean)
-def clean(month_start=1, month_end=2):
-    df = raw(month_start=month_start, month_end=month_end)
+def clean_single_month(month=1):
+    # df = raw(month_start=month_start, month_end=month_end)
+    df = read_single_month(month=month)
 
     # ----------------------------------------------------------------------------#
 
@@ -79,12 +82,14 @@ def clean(month_start=1, month_end=2):
     # Time aggregates
     df['pickup_hr'] = df['tpep_pickup_datetime'].dt.hour
     df['pickup_day'] = df['tpep_pickup_datetime'].dt.day
+    df['pickup_dow'] = df['tpep_pickup_datetime'].dt.weekday
     df['pickup_week'] = df['tpep_pickup_datetime'].dt.isocalendar().week
     df['pickup_month'] = df['tpep_pickup_datetime'].dt.month
     df['pickup_year'] = df['tpep_pickup_datetime'].dt.year
 
     df['dropoff_hr'] = df['tpep_dropoff_datetime'].dt.hour
     df['dropoff_day'] = df['tpep_dropoff_datetime'].dt.day
+    df['dropoff_dow'] = df['tpep_dropoff_datetime'].dt.weekday
     df['dropoff_week'] = df['tpep_dropoff_datetime'].dt.isocalendar().week
     df['dropoff_month'] = df['tpep_dropoff_datetime'].dt.month
     df['dropoff_year'] = df['tpep_dropoff_datetime'].dt.year
@@ -219,3 +224,57 @@ def clean(month_start=1, month_end=2):
     })
 
     return df
+
+
+##############################################################################
+#
+# For many months, clean, aggregated, and append monthly data.
+groupings = [
+    'pickup_year',
+    'pickup_month',
+    'pickup_week', 
+    'pickup_day',
+    'pickup_dow',
+    # 'pickup_hr', 
+    'pickup_service_zone', 
+    'pickup_zone',
+    'dropoff_service_zone', 
+    'dropoff_zone',
+    'route',
+    'service_route',
+    'vendor', 
+    # 'ratecode', 
+    # 'payment_type',
+    # 'store_and_fwd_flag'
+]
+def read_agg(month_start=1, month_end=2, groupings=groupings):
+    base_df = pd.DataFrame()
+
+    for month in range(month_start, month_end+1):
+        tmp_df = clean_single_month(month)
+        agg_df = tmp_df.groupby(groupings, as_index=False, observed=True).agg(
+            total_ride_count        = ('tpep_pickup_datetime', 'count'), # count number of rides
+            total_passenger_count   = ('passenger_count', 'sum'),
+            avg_passenger_count     = ('passenger_count', 'mean'),
+            total_trip_distance     = ('trip_distance', 'sum'),
+            avg_trip_distance       = ('trip_distance', 'mean'),
+            total_fare_amount       = ('fare_amount', 'sum'),
+            avg_fare_amount         = ('fare_amount', 'mean'),
+            total_extra             = ('extra', 'sum'),
+            avg_extra               = ('extra', 'mean'),
+            total_mta_tax           = ('mta_tax', 'sum'),
+            avg_mta_tax             = ('mta_tax', 'mean'),
+            total_tip_amount        = ('tip_amount', 'sum'),
+            avg_tip_amount          = ('tip_amount', 'mean'),
+            total_tolls_amount      = ('tolls_amount', 'sum'),
+            avg_tolls_amount        = ('tolls_amount', 'mean'),
+            total_impr_surcharge    = ('improvement_surcharge', 'sum'),
+            avg_impr_surcharge      = ('improvement_surcharge', 'mean'),
+            total_revenue           = ('total_amount', 'sum'),
+            avg_revenue             = ('total_amount', 'mean'),
+            total_airport_fee       = ('Airport_fee', 'sum'),
+            avg_airport_fee         = ('Airport_fee', 'mean'),
+        )
+        base_df = pd.concat([base_df, agg_df], ignore_index=True)
+
+    return base_df
