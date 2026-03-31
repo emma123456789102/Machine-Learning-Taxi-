@@ -1,4 +1,7 @@
 import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
 ##############################################################################
 #
@@ -80,6 +83,7 @@ def clean_single_month(month=1):
     ### TRANSFORMATIONS
 
     # Time aggregates
+    df['pickup_date'] = pd.to_datetime(df['tpep_pickup_datetime'].dt.date)
     df['pickup_hr'] = df['tpep_pickup_datetime'].dt.hour
     df['pickup_day'] = df['tpep_pickup_datetime'].dt.day
     df['pickup_dow'] = df['tpep_pickup_datetime'].dt.weekday
@@ -228,12 +232,74 @@ def clean_single_month(month=1):
 
 ##############################################################################
 #
+# Documentation:
+#     <https://mesonet.agron.iastate.edu/nws/cf6table.php?station=KNYC&opt=bystation&year=2024>
+#
+# The API specifically calls:
+#     <https://mesonet.agron.iastate.edu/json/cf6.py?station=KNYC&year=2024>
+#
+def read_weather_data():
+    # Using new API
+    response = requests.get("https://mesonet.agron.iastate.edu/json/cf6.py?station=KNYC&year=2024").json()
+    wthr = pd.DataFrame(response['results'])
+    wthr['date'] = pd.to_datetime(wthr['valid'])
+    wthr = wthr.drop(columns=['name', 'station', 'valid', 'state', 'wfo', 'link', 'product', 'minutes_sunshine', 'possible_sunshine', 'hdd', 'cdd', 'gust_drct', 'avg_drct', 'snowd_12z', 'avg_smph'])
+
+    # CF6 Code	Abbrev	Meaning
+    # 1	FG	Fog or Mist
+    # 2	DNSEFG	Fog or Vis 0.25 mile or less
+    # 3	TS	Thunder
+    # 4	IP	Ice pellets
+    # 5	GR	Hail
+    # 6	FZRA	Freezing Rain or Drizzle
+    # 7	DSTSTM	Duststorm or Sandstorm vis 0.25 mile or less
+    # 8	HZ	Smoke or Haze
+    # 9	BLSN	Blowing Snow
+    # X	TOR	Tornado
+    # M	M	Missing Data
+    wthr['fog']           = wthr['wxcodes'].str.contains('1', na=False).astype(bool)
+    wthr['low_vis']       = wthr['wxcodes'].str.contains('2', na=False).astype(bool)
+    wthr['thunder']       = wthr['wxcodes'].str.contains('3', na=False).astype(bool)
+    wthr['ice']           = wthr['wxcodes'].str.contains('4', na=False).astype(bool)
+    wthr['hail']          = wthr['wxcodes'].str.contains('5', na=False).astype(bool)
+    wthr['freezing_rain'] = wthr['wxcodes'].str.contains('6', na=False).astype(bool)
+    wthr['duststorm']     = wthr['wxcodes'].str.contains('7', na=False).astype(bool)
+    wthr['haze']          = wthr['wxcodes'].str.contains('8', na=False).astype(bool)
+    wthr['blowing_snow']  = wthr['wxcodes'].str.contains('9', na=False).astype(bool)
+    wthr['tornado']       = wthr['wxcodes'].str.contains('X', na=False).astype(bool)
+
+    # A lot of numerical values can include 'T' as an entry
+    #
+    # This refers to 'trace amounts', i.e. miniscule levels of precipitation; we will just replace with 0
+    wthr.replace('T', 0, inplace=True)
+    wthr.replace('M', np.nan, inplace=True)
+    wthr = wthr.astype({
+        'snow': 'float64',
+        'precip': 'float64',
+    })
+
+    wthr = wthr.drop(columns=[
+        'wxcodes', # redundant
+        'ice', # empty
+        'tornado', # empty
+        'blowing_snow', # empty
+        'duststorm', # empty
+        'avg_temp', # using 'high'
+        'dep_temp', # using 'high'
+        'low', # using 'high'
+    ])
+
+    return wthr
+
+##############################################################################
+#
 # For many months, clean, aggregated, and append monthly data.
 groupings = [
     'pickup_year',
     'pickup_month',
     'pickup_week', 
     'pickup_day',
+    'pickup_date',
     'pickup_dow',
     # 'pickup_hr', 
     'pickup_service_zone', 
@@ -276,5 +342,9 @@ def read_agg(month_start=1, month_end=2, groupings=groupings):
             avg_airport_fee         = ('Airport_fee', 'mean'),
         )
         base_df = pd.concat([base_df, agg_df], ignore_index=True)
+
+    weather = read_weather_data()
+    base_df = pd.merge(base_df, weather, left_on='pickup_date', right_on='date', how='left')
+    base_df = base_df.drop(columns=['date', 'pickup_date'])
 
     return base_df
