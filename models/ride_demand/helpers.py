@@ -1,8 +1,10 @@
+import dataset
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
+#################################################################################################
+#
 # Collection of regression scores
 #
 # 1. Mean Abs Err: 
@@ -40,7 +42,12 @@ def analysis(y_true, y_pred):
     ax[1].set_title("Actual vs. Predicted")
 
 
+#################################################################################################
+#
+# Return `total_ride_count` as y variable, and encoded training set
 def preprocess():
+    df = dataset.read_agg(month_start=1, month_end=12)
+    
     # Recast object types -> category
     # Not sure why this changes from typecasting in `dataset.clean()`
     df = df.astype({
@@ -107,9 +114,5 @@ def preprocess():
     )
     # pipeline.set_output(transform='pandas') # DEPRECATED: returning pandas cost too much memory
     X_encoded = pipeline.fit_transform(X)
-
-    # Train vs Test
-    X_train, X_test, y_train, y_test = train_test_split(X_encoded, y, test_size=0.2, random_state=seed)
-
-    # Train vs Validation
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3, random_state=seed)
+    
+    return y, X_encoded
