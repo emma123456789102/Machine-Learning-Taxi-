@@ -1,4 +1,6 @@
 import pandas as pd
+import requests
+import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
@@ -81,7 +83,7 @@ def clean_single_month(month=1):
     # ----------------------------------------------------------------------------#
 
     ### TRANSFORMATIONS
-
+    #
     # Time aggregates
     df['pickup_date'] = pd.to_datetime(df['tpep_pickup_datetime'].dt.date)
     df['pickup_hr'] = df['tpep_pickup_datetime'].dt.hour
@@ -273,6 +275,7 @@ def read_weather_data():
     # This refers to 'trace amounts', i.e. miniscule levels of precipitation; we will just replace with 0
     wthr.replace('T', 0, inplace=True)
     wthr.replace('M', np.nan, inplace=True)
+    wthr = wthr.infer_objects(copy=False)
     wthr = wthr.astype({
         'snow': 'float64',
         'precip': 'float64',
@@ -287,9 +290,64 @@ def read_weather_data():
         'avg_temp', # using 'high'
         'dep_temp', # using 'high'
         'low', # using 'high'
+        'gust_smph', # using 'max_smph'
     ])
 
+    wthr = wthr.rename(columns={
+        'high': 'temp_high',
+        'max_smph': 'max_wind_speed',
+        'cloud_ss': 'cloud_coverage',
+    })
+
     return wthr
+
+##############################################################################
+#
+# Source: <https://www.officeholidays.com/countries/usa/new-york/2024>
+#
+# | Date | Holiday Name | Holiday Type |
+# |------|--------------|--------------|
+# | 01/01/2024 | New Year's Day | National |
+# | 15/01/2024 | Martin Luther King Jr. Day | National |
+# | 12/02/2024 | Lincoln's Birthday | Government |
+# | 19/02/2024 | Washington's Birthday | Regional |
+# | 31/03/2024 | Easter Sunday | Not a holiday |
+# | 12/05/2024 | Mother's Day | Not a holiday |
+# | 27/05/2024 | Memorial Day | National |
+# | 16/06/2024 | Father's Day | Not a holiday |
+# | 19/06/2024 | Juneteenth | Regional |
+# | 04/07/2024 | Independence Day | National |
+# | 02/09/2024 | Labor Day | National |
+# | 14/10/2024 | Columbus Day | Regional |
+# | 05/11/2024 | Election Day | Government |
+# | 11/11/2024 | Veterans Day | Regional |
+# | 28/11/2024 | Thanksgiving | National |
+# | 25/12/2024 | Christmas Day | National |
+def calendar():
+    data = {
+        "date": [
+            "01/01/2024", "15/01/2024", "12/02/2024", "19/02/2024",
+            "31/03/2024", "12/05/2024", "27/05/2024", "16/06/2024",
+            "19/06/2024", "04/07/2024", "02/09/2024", "14/10/2024",
+            "05/11/2024", "11/11/2024", "28/11/2024", "25/12/2024"
+        ],
+        "holiday": [
+            "New Year's Day", "Martin Luther King Jr. Day", "Lincoln's Birthday",
+            "Washington's Birthday", "Easter Sunday", "Mother's Day",
+            "Memorial Day", "Father's Day", "Juneteenth", "Independence Day",
+            "Labor Day", "Columbus Day", "Election Day", "Veterans Day",
+            "Thanksgiving", "Christmas Day"
+        ],
+        "holiday_type": [
+            "National", "National", "Government", "Regional", "Not a holiday",
+            "Not a holiday", "National", "Not a holiday", "Regional", "National",
+            "National", "Regional", "Government", "Regional", "National", "National"
+        ]
+    }
+
+    calendar = pd.DataFrame(data)
+    calendar["date"] = pd.to_datetime(calendar["date"], format="%d/%m/%Y")
+    return calendar
 
 ##############################################################################
 #
@@ -345,6 +403,11 @@ def read_agg(month_start=1, month_end=2, groupings=groupings):
 
     weather = read_weather_data()
     base_df = pd.merge(base_df, weather, left_on='pickup_date', right_on='date', how='left')
-    base_df = base_df.drop(columns=['date', 'pickup_date'])
+    base_df = base_df.drop(columns=['date'])
+
+    cal = calendar()
+    base_df = pd.merge(base_df, cal, left_on='pickup_date', right_on='date', how='left')
+    base_df['holiday'] = base_df['holiday'].fillna("None")
+    base_df = base_df.drop(columns=['date', 'holiday_type'])
 
     return base_df
