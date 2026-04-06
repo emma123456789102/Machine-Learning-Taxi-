@@ -38,6 +38,19 @@ def raw(month_start=1, month_end=2):
 
     return df
 
+# Optional: time of day label (useful for report visualisations)
+def get_time_of_day(hour):
+    if 0 <= hour < 6:
+        return "Late Night"
+    elif 6 <= hour < 10:
+        return "Morning Rush"
+    elif 10 <= hour < 16:
+        return "Midday"
+    elif 16 <= hour < 20:
+        return "Evening Rush"
+    else:
+        return "Evening"
+
 ##############################################################################
 #
 # Transformed version of the dataset, but still **unaggregated**.
@@ -87,18 +100,22 @@ def clean_single_month(month=1):
     # Time aggregates
     df['pickup_date'] = pd.to_datetime(df['tpep_pickup_datetime'].dt.date)
     df['pickup_hr'] = df['tpep_pickup_datetime'].dt.hour
+    df['time_of_day'] = df['tpep_pickup_datetime']
     df['pickup_day'] = df['tpep_pickup_datetime'].dt.day
     df['pickup_dow'] = df['tpep_pickup_datetime'].dt.weekday
     df['pickup_week'] = df['tpep_pickup_datetime'].dt.isocalendar().week
     df['pickup_month'] = df['tpep_pickup_datetime'].dt.month
     df['pickup_year'] = df['tpep_pickup_datetime'].dt.year
+    df["time_of_day"] = df["tpep_pickup_datetime"].dt.hour.apply(get_time_of_day)
 
-    df['dropoff_hr'] = df['tpep_dropoff_datetime'].dt.hour
-    df['dropoff_day'] = df['tpep_dropoff_datetime'].dt.day
-    df['dropoff_dow'] = df['tpep_dropoff_datetime'].dt.weekday
-    df['dropoff_week'] = df['tpep_dropoff_datetime'].dt.isocalendar().week
-    df['dropoff_month'] = df['tpep_dropoff_datetime'].dt.month
-    df['dropoff_year'] = df['tpep_dropoff_datetime'].dt.year
+    # # Never used these in the end
+    #
+    # df['dropoff_hr'] = df['tpep_dropoff_datetime'].dt.hour
+    # df['dropoff_day'] = df['tpep_dropoff_datetime'].dt.day
+    # df['dropoff_dow'] = df['tpep_dropoff_datetime'].dt.weekday
+    # df['dropoff_week'] = df['tpep_dropoff_datetime'].dt.isocalendar().week
+    # df['dropoff_month'] = df['tpep_dropoff_datetime'].dt.month
+    # df['dropoff_year'] = df['tpep_dropoff_datetime'].dt.year
 
     # store_and_fwd_flag
     #
@@ -121,16 +138,16 @@ def clean_single_month(month=1):
     # 5 = Negotiated fare
     # 6 = Group ride
     # 99 = Null/unknown
-    ratecode_mapping = {
-        1: "Standard Rate",
-        2: "JFK",
-        3: "Newark",
-        4: "Nassua or Westchester",
-        5: "Negotiated fare",
-        6: "Group Ride",
-        99: "Null/unknown",
-    }
-    df['ratecode'] = df['RatecodeID'].map(ratecode_mapping)
+    # ratecode_mapping = {
+    #     1: "Standard Rate",
+    #     2: "JFK",
+    #     3: "Newark",
+    #     4: "Nassua or Westchester",
+    #     5: "Negotiated fare",
+    #     6: "Group Ride",
+    #     99: "Null/unknown",
+    # }
+    # df['ratecode'] = df['RatecodeID'].map(ratecode_mapping)
 
     # payment_type
     #
@@ -142,16 +159,16 @@ def clean_single_month(month=1):
     # 4 = Dispute
     # 5 = Unknown
     # 6 = Voided trip
-    payment_type_mapping = {
-        0: "Flex Fare trip",
-        1: "Credit card",
-        2: "Cash",
-        3: "No charge",
-        4: "Dispute",
-        5: "Unknown",
-        6: "Voided trip",
-    }
-    df['payment_type'] = df['payment_type'].map(payment_type_mapping)
+    # payment_type_mapping = {
+    #     0: "Flex Fare trip",
+    #     1: "Credit card",
+    #     2: "Cash",
+    #     3: "No charge",
+    #     4: "Dispute",
+    #     5: "Unknown",
+    #     6: "Voided trip",
+    # }
+    # df['payment_type'] = df['payment_type'].map(payment_type_mapping)
 
     # VendorID
     #
@@ -160,13 +177,13 @@ def clean_single_month(month=1):
     # 2 = Curb Mobility, LLC
     # 6 = Myle Technologies Inc
     # 7 = Helix
-    vendor_mapping = {
-        1: "Creative Mobile Technologies, LLC",
-        2: "Curb Mobility, LLC",
-        6: "Myle Technologies Inc",
-        7: "Helix",
-    }
-    df['vendor'] = df['VendorID'].map(vendor_mapping)    
+    # vendor_mapping = {
+    #     1: "Creative Mobile Technologies, LLC",
+    #     2: "Curb Mobility, LLC",
+    #     6: "Myle Technologies Inc",
+    #     7: "Helix",
+    # }
+    # df['vendor'] = df['VendorID'].map(vendor_mapping)    
 
     # Taxi zones
     #
@@ -179,7 +196,7 @@ def clean_single_month(month=1):
     df = df.merge(
         zones[['LocationID', 'Zone', 'service_zone']].rename(columns={
             'Zone': 'pickup_zone',
-            'service_zone': 'pickup_service_zone',
+            # 'service_zone': 'pickup_service_zone',
         }),
         left_on='PULocationID', 
         right_on='LocationID',
@@ -191,7 +208,7 @@ def clean_single_month(month=1):
     df = df.merge(  
         zones[['LocationID', 'Zone', 'service_zone']].rename(columns={
             'Zone': 'dropoff_zone',
-            'service_zone': 'dropoff_service_zone',
+            # 'service_zone': 'dropoff_service_zone',
         }),
         left_on='DOLocationID', 
         right_on='LocationID',
@@ -201,7 +218,7 @@ def clean_single_month(month=1):
 
     # Taxi zones: route taken
     df['route'] = df['pickup_zone'].astype(str) + " to " + df['dropoff_zone'].astype(str)
-    df['service_route'] = df['pickup_service_zone'].astype(str) + " to " + df['dropoff_service_zone'].astype(str)
+    # df['service_route'] = df['pickup_service_zone'].astype(str) + " to " + df['dropoff_service_zone'].astype(str)
 
     # ----------------------------------------------------------------------------#
 
@@ -211,23 +228,27 @@ def clean_single_month(month=1):
         'VendorID',
         'PULocationID',
         'DOLocationID',
+        'store_and_fwd_flag',
     ]
     df = df.drop(columns=columns_to_drop)
 
 
     ### TYPE CAST
     df = df.astype({
-        'store_and_fwd_flag': 'bool',
-        'payment_type': 'category',
-        'ratecode': 'category',
-        'vendor': 'category',
+        # 'store_and_fwd_flag': 'bool',
+        # 'payment_type': 'category',
+        # 'ratecode': 'category',
+        # 'vendor': 'category',
         'pickup_zone': 'category',
-        'pickup_service_zone': 'category',
+        # 'pickup_service_zone': 'category',
         'dropoff_zone': 'category',
-        'dropoff_service_zone': 'category',
+        # 'dropoff_service_zone': 'category',
         'route': 'category',
-        'service_route': 'category',
+        # 'service_route': 'category',
     })
+
+    # Only 2024 data
+    df = df[df['pickup_year'] == 2024]
 
     return df
 
@@ -299,6 +320,9 @@ def read_weather_data():
         'cloud_ss': 'cloud_coverage',
     })
 
+    # impute 3 missing 'max_wind_speed'
+    wthr['max_wind_speed'] = wthr['max_wind_speed'].interpolate(method='linear')
+
     return wthr
 
 ##############################################################################
@@ -323,7 +347,7 @@ def read_weather_data():
 # | 11/11/2024 | Veterans Day | Regional |
 # | 28/11/2024 | Thanksgiving | National |
 # | 25/12/2024 | Christmas Day | National |
-def calendar():
+def read_calendar_data():
     data = {
         "date": [
             "01/01/2024", "15/01/2024", "12/02/2024", "19/02/2024",
@@ -353,20 +377,20 @@ def calendar():
 #
 # For many months, clean, aggregated, and append monthly data.
 groupings = [
-    'pickup_year',
     'pickup_month',
     'pickup_week', 
-    'pickup_day',
+    # 'pickup_day',
     'pickup_date',
     'pickup_dow',
     # 'pickup_hr', 
-    'pickup_service_zone', 
+    'time_of_day',
+    # 'pickup_service_zone', 
     'pickup_zone',
-    'dropoff_service_zone', 
+    # 'dropoff_service_zone', 
     'dropoff_zone',
     'route',
-    'service_route',
-    'vendor', 
+    # 'service_route',
+    # 'vendor', 
     # 'ratecode', 
     # 'payment_type',
     # 'store_and_fwd_flag'
@@ -375,39 +399,55 @@ def read_agg(month_start=1, month_end=2, groupings=groupings):
     base_df = pd.DataFrame()
 
     for month in range(month_start, month_end+1):
+        print(f"reading data for month {month}")
         tmp_df = clean_single_month(month)
+        # tmp_df = tmp_df[tmp_df['pickup_year'] == 2024]
         agg_df = tmp_df.groupby(groupings, as_index=False, observed=True).agg(
             total_ride_count        = ('tpep_pickup_datetime', 'count'), # count number of rides
-            total_passenger_count   = ('passenger_count', 'sum'),
-            avg_passenger_count     = ('passenger_count', 'mean'),
-            total_trip_distance     = ('trip_distance', 'sum'),
-            avg_trip_distance       = ('trip_distance', 'mean'),
-            total_fare_amount       = ('fare_amount', 'sum'),
+            # total_passenger_count   = ('passenger_count', 'sum'),
+            # avg_passenger_count     = ('passenger_count', 'mean'),
+            # total_trip_distance     = ('trip_distance', 'sum'),
+            # avg_trip_distance       = ('trip_distance', 'mean'),
+            # total_fare_amount       = ('fare_amount', 'sum'),
             avg_fare_amount         = ('fare_amount', 'mean'),
-            total_extra             = ('extra', 'sum'),
-            avg_extra               = ('extra', 'mean'),
-            total_mta_tax           = ('mta_tax', 'sum'),
-            avg_mta_tax             = ('mta_tax', 'mean'),
-            total_tip_amount        = ('tip_amount', 'sum'),
-            avg_tip_amount          = ('tip_amount', 'mean'),
-            total_tolls_amount      = ('tolls_amount', 'sum'),
-            avg_tolls_amount        = ('tolls_amount', 'mean'),
-            total_impr_surcharge    = ('improvement_surcharge', 'sum'),
-            avg_impr_surcharge      = ('improvement_surcharge', 'mean'),
-            total_revenue           = ('total_amount', 'sum'),
-            avg_revenue             = ('total_amount', 'mean'),
-            total_airport_fee       = ('Airport_fee', 'sum'),
-            avg_airport_fee         = ('Airport_fee', 'mean'),
+            # total_extra             = ('extra', 'sum'),
+            # avg_extra               = ('extra', 'mean'),
+            # total_mta_tax           = ('mta_tax', 'sum'),
+            # avg_mta_tax             = ('mta_tax', 'mean'),
+            # total_tip_amount        = ('tip_amount', 'sum'),
+            # avg_tip_amount          = ('tip_amount', 'mean'),
+            # total_tolls_amount      = ('tolls_amount', 'sum'),
+            # avg_tolls_amount        = ('tolls_amount', 'mean'),
+            # total_impr_surcharge    = ('improvement_surcharge', 'sum'),
+            # avg_impr_surcharge      = ('improvement_surcharge', 'mean'),
+            # total_revenue           = ('total_amount', 'sum'),
+            # avg_revenue             = ('total_amount', 'mean'),
+            # total_airport_fee       = ('Airport_fee', 'sum'),
+            # avg_airport_fee         = ('Airport_fee', 'mean'),
         )
         base_df = pd.concat([base_df, agg_df], ignore_index=True)
 
+    print("collecting weather data")
     weather = read_weather_data()
     base_df = pd.merge(base_df, weather, left_on='pickup_date', right_on='date', how='left')
     base_df = base_df.drop(columns=['date'])
 
-    cal = calendar()
+    print("collecting calendar data")
+    cal = read_calendar_data()
     base_df = pd.merge(base_df, cal, left_on='pickup_date', right_on='date', how='left')
     base_df['holiday'] = base_df['holiday'].fillna("None")
     base_df = base_df.drop(columns=['date', 'holiday_type'])
+
+    print("calculating lag demand")
+    daily = df.groupby(['pickup_date', 'time_of_day', 'route'], as_index=False)['total_ride_count'].sum()
+    daily = daily.sort_values(['route', 'time_of_day', 'pickup_date'])
+    daily['lag_demand'] = daily.groupby(['route', 'time_of_day'])['total_ride_count'].shift(1)
+    daily[daily['route'] == "Upper East Side North to Upper East Side South"]
+    df = df.merge(
+        daily[['route', 'pickup_date', 'time_of_day', 'lag_demand']],
+        on=['time_of_day', 'route', 'pickup_date'],
+        how='left'
+    )
+    df['lag_demand'] = df['lag_demand'].fillna(0)
 
     return base_df
