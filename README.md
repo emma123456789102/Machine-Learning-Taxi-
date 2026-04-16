@@ -22,10 +22,7 @@ Machine-Learning-Taxi-/
 ├── data/
 │   └── README.md                 # instructions for downloading raw data
 ├── models/
-│   ├── expected_revenue/
-│   │   └── init.ipynb  # expected revenue model work
+│   ├── avg_fare/
 │   └── ride_demand/
-│       ├── 00_explore.ipynb      # initial exploration
-│       └── dataset.py            # data loading utilities
 ├── .gitignore
 └── README.md
