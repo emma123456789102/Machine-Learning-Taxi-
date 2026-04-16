@@ -3,10 +3,10 @@
 Machine Learning for Data Analysis (ID5059) project using NYC taxi trip data.
 
 ## Team
-- 2500334488
+- 250033488
 - 240027360
 - 220001379
-- Bhaskar Haldar
+- 250020807
 
 ## Project aim
 This project explores machine learning models for taxi data, with a focus on:
