@@ -2,11 +2,11 @@
 
 Machine Learning for Data Analysis (ID5059) project using NYC taxi trip data.
 
-## Team
-- 250033488
-- 240027360
-- 220001379
-- 250020807
+## co-created by :
+- 250033488 https://github.com/emma123456789102
+co-authored by : Bhaskar Haladar  <https://github.com/Bhaskar125>
+co-authored by: Kimon Vostanis <https://github.com/Vostanis>
+co-authored by : Lucy Grunnell <https://github.com/lucyg04>
 
 ## Project aim
 This project explores machine learning models for taxi data, with a focus on:
