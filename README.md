@@ -3,10 +3,10 @@
 Machine Learning for Data Analysis (ID5059) project using NYC taxi trip data.
 
 ## Team
-- Emma Davidson
-- Kimon Vostanis
-- Lucy Grunnell
-- Bhaskar Haldar
+- 250033488
+- 240027360
+- 220001379
+- 250020807
 
 ## Project aim
 This project explores machine learning models for taxi data, with a focus on:
@@ -22,10 +22,7 @@ Machine-Learning-Taxi-/
 ├── data/
 │   └── README.md                 # instructions for downloading raw data
 ├── models/
-│   ├── expected_revenue/
-│   │   └── init.ipynb  # expected revenue model work
+│   ├── avg_fare/
 │   └── ride_demand/
-│       ├── 00_explore.ipynb      # initial exploration
-│       └── dataset.py            # data loading utilities
 ├── .gitignore
 └── README.md
